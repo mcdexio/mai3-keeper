@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /home/users/renp/mai3-keeper
+python main.py 
