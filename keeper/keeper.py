@@ -16,7 +16,8 @@ import config
 from lib.address import Address
 from lib.wad import Wad
 from watcher import Watcher
-from contract.liquidity_pool import LiquidityPool, MarginAccount, Status
+from contract.liquidity_pool import LiquidityPool, Status
+from contract.reader import Reader, MarginAccount
 
 class Keeper:
     logger = logging.getLogger()
@@ -24,11 +25,13 @@ class Keeper:
     def __init__(self, args: list, **kwargs):
         logging.config.dictConfig(config.LOG_CONFIG)
         self.keeper_account = None
-        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
+        #self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
+        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL))
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.gas_price = self.web3.toWei(config.GAS_PRICE, "gwei")
 
         self.pools = []
+        self.reader = Reader(web3=self.web3, address=Address(config.READER_ADDRESS))
         # watcher
         self.watcher = Watcher(self.web3)
 
@@ -86,7 +89,7 @@ class Keeper:
             self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
             accounts = pool.accounts(perp_index, 0, accounts_count)
             for account in accounts:
-                margin_account = pool.getMarginAccount(perp_index, account)
+                margin_account = self.reader.getMarginAccount(pool.address.address, perp_index, account)
                 self.logger.info(f"check_account address:{account} margin:{margin_account.margin} position:{margin_account.position} cash:{margin_account.cash} available_cash:{margin_account.available_cash}")
                 if not margin_account.is_maintenance_margin_safe:
                     self.logger.info(f"account unsafe:{account}")
