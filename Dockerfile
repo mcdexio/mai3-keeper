@@ -19,5 +19,5 @@ COPY ./ /app
 WORKDIR /app
 
 # Entry
-CMD ["/opt/conda/envs/mai2-keeper/bin/python3", "main.py"]
+CMD ["/opt/conda/envs/mai3-keeper/bin/python3", "main.py"]
 # CMD ["sleep", "86400"]
