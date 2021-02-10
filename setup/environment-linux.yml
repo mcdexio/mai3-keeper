@@ -3,6 +3,6 @@ dependencies:
   - python=3.8.5
   - pip:
     - requests==2.21.0
-    - web3==5.5.1
+    - web3==5.11.1
     - eth-abi==2.1.0
 
