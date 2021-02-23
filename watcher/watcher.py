@@ -67,7 +67,7 @@ class Watcher:
             
 #            for event in event_filter.get_new_entries():
             self._sync_block()
-            time.sleep(100)
+            time.sleep(20)
 
         for block_syncer in self.block_syncers:
             block_syncer.wait()
