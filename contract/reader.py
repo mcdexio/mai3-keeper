@@ -5,15 +5,12 @@ from lib.contract import Contract
 from lib.wad import Wad
 
 class MarginAccount():
-    def __init__(self, cash: int, position: int, available_cash: int, margin: int, settleable_margin: int, is_initial_margin_safe: bool, is_maintenance_margin_safe: bool, is_margin_safe: bool):
-        self.cash = Wad(cash)
+    def __init__(self, address, available_cash: int, position: int, margin: int, is_safe: bool):
+        self.address = Address(address)
         self.position = Wad(position)
         self.available_cash = Wad(available_cash)
         self.margin = Wad(margin)
-        self.settleable_margin = Wad(settleable_margin)
-        self.is_initial_margin_safe = is_initial_margin_safe
-        self.is_maintenance_margin_safe = is_maintenance_margin_safe
-        self.is_margin_safe = is_margin_safe
+        self.is_safe = is_safe
 
 
 class Reader(Contract):
@@ -30,3 +27,10 @@ class Reader(Contract):
     def getMarginAccount(self, pool_address, perpetual_index, address) -> MarginAccount:
         margin_account = self.contract.functions.getAccountStorage(pool_address, perpetual_index, address).call()
         return MarginAccount(margin_account[1][0], margin_account[1][1], margin_account[1][2], margin_account[1][3], margin_account[1][4], margin_account[1][5], margin_account[1][6], margin_account[1][7])
+
+    def getAccountsInfo(self, pool_address, perpetual_index, begin, end) -> []:
+        accountsInfo = self.contract.functions.getAccountsInfo(pool_address, perpetual_index, begin, end).call()
+        res = []
+        for account in accountsInfo[1]:
+            res.append(MarginAccount(account[0], account[1], account[2], account[3], account[4]))
+        return res

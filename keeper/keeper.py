@@ -87,11 +87,14 @@ class Keeper:
             if accounts_count == 0:
                 continue
             self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
-            accounts = pool.accounts(perp_index, 0, accounts_count)
+            #accounts = pool.accounts(perp_index, 0, accounts_count)
+            accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)
             for account in accounts:
-                margin_account = self.reader.getMarginAccount(pool.address.address, perp_index, account)
-                self.logger.info(f"check_account address:{account} margin:{margin_account.margin} position:{margin_account.position} cash:{margin_account.cash} available_cash:{margin_account.available_cash}")
-                if not margin_account.is_maintenance_margin_safe:
+                #margin_account = self.reader.getMarginAccount(pool.address.address, perp_index, account)
+                #self.logger.info(f"check_account address:{account} margin:{margin_account.margin} position:{margin_account.position} cash:{margin_account.cash} available_cash:{margin_account.available_cash}")
+                #if not margin_account.is_maintenance_margin_safe:
+                self.logger.info(f"check_account address:{account.address} margin:{account.margin} position:{account.position} available_cash:{account.available_cash}")
+                if not account.is_safe:
                     self.logger.info(f"account unsafe:{account}")
                     try:
                         tx_hash = pool.liquidateByAMM(perp_index, account, self.keeper_account, self.gas_price)
