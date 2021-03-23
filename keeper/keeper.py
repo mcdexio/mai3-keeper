@@ -97,7 +97,7 @@ class Keeper:
                 if not account.is_safe:
                     self.logger.info(f"account unsafe:{account}")
                     try:
-                        tx_hash = pool.liquidateByAMM(perp_index, account, self.keeper_account, self.gas_price)
+                        tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
                         transaction_status = self._wait_transaction_receipt(tx_hash, 10)
                         if transaction_status:
                             self.logger.info(f"liquidate success. address:{account}")
