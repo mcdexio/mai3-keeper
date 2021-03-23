@@ -93,7 +93,7 @@ class Keeper:
                 #margin_account = self.reader.getMarginAccount(pool.address.address, perp_index, account)
                 #self.logger.info(f"check_account address:{account} margin:{margin_account.margin} position:{margin_account.position} cash:{margin_account.cash} available_cash:{margin_account.available_cash}")
                 #if not margin_account.is_maintenance_margin_safe:
-                self.logger.info(f"check_account address:{account.address} margin:{account.margin} position:{account.position} available_cash:{account.available_cash}")
+                self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position} available_cash:{account.available_cash}")
                 if not account.is_safe:
                     self.logger.info(f"account unsafe:{account}")
                     try:
