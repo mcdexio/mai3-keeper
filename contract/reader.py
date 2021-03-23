@@ -6,7 +6,7 @@ from lib.wad import Wad
 
 class MarginAccount():
     def __init__(self, address, available_cash: int, position: int, margin: int, is_safe: bool):
-        self.address = Address(address)
+        self.address = address
         self.position = Wad(position)
         self.available_cash = Wad(available_cash)
         self.margin = Wad(margin)
