@@ -101,13 +101,16 @@ class Keeper:
         perp_count = pool.getPerpetualCount()
         for perp_index in range(perp_count):
             # check perpetual status
-            perp_status = pool.perpetual_status(perp_index)
-            if perp_status != Status.NORMAL and perp_status != Status.EMERGENCY:
-                self.logger.info(f"perpetual contract status is {perp_status}. continue")
-                continue
-            accounts_count = pool.accounts_count(perp_index)
-            if accounts_count == 0:
-                continue
+            try:
+                perp_status = pool.perpetual_status(perp_index)
+                if perp_status != Status.NORMAL and perp_status != Status.EMERGENCY:
+                    self.logger.info(f"perpetual contract status is {perp_status}. continue")
+                    continue
+                accounts_count = pool.accounts_count(perp_index)
+                if accounts_count == 0:
+                    continue
+            except Exception as e:
+                self.logger.warning(f"get perpetual status or account count err:{e}")
             self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
             #accounts = pool.accounts(perp_index, 0, accounts_count)
             accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)

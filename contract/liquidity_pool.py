@@ -46,7 +46,7 @@ class LiquidityPool(Contract):
 
     def getPerpetualCount(self):
         pool_info = self.contract.functions.getLiquidityPoolInfo().call()
-        return pool_info[6]
+        return pool_info[5][1]
 
     def accounts_count(self, perpetual_index) -> int:
         return self.contract.functions.getActiveAccountCount(perpetual_index).call()
