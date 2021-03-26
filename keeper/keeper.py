@@ -48,12 +48,16 @@ class Keeper:
             self._get_pools()
 
     def _get_pools(self):
-        pool_count = self.pool_creator.getLiquidityPoolCount()
-        pool_addrs = self.pool_creator.listLiquidityPools(0, pool_count)
-        for addr in pool_addrs:
-            if addr not in self.pools.keys():
-                pool = LiquidityPool(web3=self.web3, address=Address(addr))
-                self.pools[addr] = pool
+        try:
+            pool_count = self.pool_creator.getLiquidityPoolCount()
+            pool_addrs = self.pool_creator.listLiquidityPools(0, pool_count)
+            for addr in pool_addrs:
+                if addr not in self.pools.keys():
+                    pool = LiquidityPool(web3=self.web3, address=Address(addr))
+                    self.pools[addr] = pool
+        except Exception as e:
+            self.logger.warning(f"get all pools error: {e}")
+
  
     def _check_keeper_account(self):
         with open(config.KEEPER_KEY) as f:
