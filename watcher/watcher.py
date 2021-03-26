@@ -88,7 +88,7 @@ class Watcher:
         #    return
 
         if self.terminated:
-            self.logger.debug(f"Ignoring block #{block_number} as keeper is already terminating")
+            self.logger.debug(f"Ignoring block as keeper is already terminating")
 
         def on_start():
             self.logger.debug(f"Processing the syncer")

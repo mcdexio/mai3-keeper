@@ -24,10 +24,6 @@ class Reader(Contract):
         self.address = address
         self.contract = self._get_contract(web3, self.abi, address)
 
-    def getMarginAccount(self, pool_address, perpetual_index, address) -> MarginAccount:
-        margin_account = self.contract.functions.getAccountStorage(pool_address, perpetual_index, address).call()
-        return MarginAccount(margin_account[1][0], margin_account[1][1], margin_account[1][2], margin_account[1][3], margin_account[1][4], margin_account[1][5], margin_account[1][6], margin_account[1][7])
-
     def getAccountsInfo(self, pool_address, perpetual_index, begin, end) -> []:
         accountsInfo = self.contract.functions.getAccountsInfo(pool_address, perpetual_index, begin, end).call()
         res = []

@@ -13,16 +13,16 @@ class Status(Enum):
      EMERGENCY = 3
      CLEARED = 4
 
-class MarginAccount():
-    def __init__(self, cash: int, position: int, available_cash: int, margin: int, settleable_margin: int, is_initial_margin_safe: bool, is_maintenance_margin_safe: bool, is_margin_safe: bool):
-        self.cash = Wad(cash)
-        self.position = Wad(position)
-        self.available_cash = Wad(available_cash)
-        self.margin = Wad(margin)
-        self.settleable_margin = Wad(settleable_margin)
-        self.is_initial_margin_safe = is_initial_margin_safe
-        self.is_maintenance_margin_safe = is_maintenance_margin_safe
-        self.is_margin_safe = is_margin_safe
+# class MarginAccount():
+#     def __init__(self, cash: int, position: int, available_cash: int, margin: int, settleable_margin: int, is_initial_margin_safe: bool, is_maintenance_margin_safe: bool, is_margin_safe: bool):
+#         self.cash = Wad(cash)
+#         self.position = Wad(position)
+#         self.available_cash = Wad(available_cash)
+#         self.margin = Wad(margin)
+#         self.settleable_margin = Wad(settleable_margin)
+#         self.is_initial_margin_safe = is_initial_margin_safe
+#         self.is_maintenance_margin_safe = is_maintenance_margin_safe
+#         self.is_margin_safe = is_margin_safe
 
 class Liquidate:
     def __init__(self, price: int, amount: int):
@@ -59,19 +59,17 @@ class LiquidityPool(Contract):
         accounts = self.contract.functions.listActiveAccounts(perpetual_index, begin, end).call()
         return accounts
 
-    def getMarginAccount(self, perpetual_index, address) -> MarginAccount:
-        margin_account = self.contract.functions.getMarginAccount(perpetual_index, address).call()
-        return MarginAccount(margin_account[0], margin_account[1], margin_account[2], margin_account[3], margin_account[4], margin_account[5], margin_account[6], margin_account[7])
+    # def getMarginAccount(self, perpetual_index, address) -> MarginAccount:
+    #     margin_account = self.contract.functions.getMarginAccount(perpetual_index, address).call()
+    #     return MarginAccount(margin_account[0], margin_account[1], margin_account[2], margin_account[3], margin_account[4], margin_account[5], margin_account[6], margin_account[7])
 
 
     def liquidateByAMM(self, perpetual_index, trader, user, gas_price):
-        self.logger.warning(f"11111111111111111111")
         gas = self.contract.functions.liquidateByAMM(perpetual_index, trader).estimateGas({
                     'from': user.address,
                     'gasPrice': gas_price
                 })
 
-        self.logger.warning(f"gas : {gas}")
         tx_hash = self.contract.functions.liquidateByAMM(perpetual_index, trader).transact({
                     'from': user.address,
                     'gasPrice': gas_price

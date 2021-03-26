@@ -18,6 +18,7 @@ from lib.wad import Wad
 from watcher import Watcher
 from contract.liquidity_pool import LiquidityPool, Status
 from contract.reader import Reader, MarginAccount
+from contract.pool_creator import PoolCreator
 
 class Keeper:
     logger = logging.getLogger()
@@ -30,16 +31,29 @@ class Keeper:
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.gas_price = self.web3.toWei(config.GAS_PRICE, "gwei")
 
-        self.pools = []
+        self.pools = {}
         self.reader = Reader(web3=self.web3, address=Address(config.READER_ADDRESS))
+        self.pool_creator = PoolCreator(web3=self.web3, address=Address(config.POOL_CREATOR_ADDRESS))
+
         # watcher
         self.watcher = Watcher(self.web3)
 
     def _set_liquidity_pools(self):
-        pools_address = json.loads(config.POOL_ADDRESS)
-        for addr in pools_address:
-            pool = LiquidityPool(web3=self.web3, address=Address(addr))
-            self.pools.append(pool)
+        if config.IS_USE_WHITELIST:
+            pools_address = json.loads(config.POOL_ADDRESS)
+            for addr in pools_address:
+                pool = LiquidityPool(web3=self.web3, address=Address(addr))
+                self.pools[addr] = pool
+        else:
+            self._get_pools()
+
+    def _get_pools(self):
+        pool_count = self.pool_creator.getLiquidityPoolCount()
+        pool_addrs = self.pool_creator.listLiquidityPools(0, pool_count)
+        for addr in pool_addrs:
+            if addr not in self.pools.keys():
+                pool = LiquidityPool(web3=self.web3, address=Address(addr))
+                self.pools[addr] = pool
  
     def _check_keeper_account(self):
         with open(config.KEEPER_KEY) as f:
@@ -57,12 +71,16 @@ class Keeper:
         return True
 
     def _check_all_pools(self):
-        def thread_fun(pool_idx):
-            self._check_pool_accounts(pool_idx)
+        def thread_fun(pool_key):
+            self._check_pool_accounts(pool_key)
+
+        # not use pool whitelist, get all pools onchain
+        if not config.IS_USE_WHITELIST:
+            self._get_pools()
 
         thread_list = []
-        for pool_idx in range(len(self.pools)):
-            thread = threading.Thread(target=thread_fun, args=(pool_idx,))
+        for key in self.pools.keys():
+            thread = threading.Thread(target=thread_fun, args=(key,))
             thread_list.append(thread)
 
         for i in range(len(thread_list)):
@@ -74,8 +92,8 @@ class Keeper:
         self.logger.info(f"check all pools end!")
 
 
-    def _check_pool_accounts(self, pool_idx):
-        pool = self.pools[pool_idx]
+    def _check_pool_accounts(self, key):
+        pool = self.pools[key]
         perp_count = pool.getPerpetualCount()
         for perp_index in range(perp_count):
             # check perpetual status

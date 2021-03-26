@@ -11,9 +11,10 @@ KEEPER_KEY = os.environ.get('KEEPER_KEY', './key_file')
 GAS_PRICE = os.environ.get('GAS_PRICE', 1)
 
 # contract address
+IS_USE_WHITELIST = os.environ.get('IS_USE_WHITELIST', False)
 POOL_ADDRESS = os.environ.get('POOL_ADDRESS', '["0x043f3FB76d0bafF2F24B1E894210177fF51B98cC", "0x0323D333A8aAb656D79Ba1adDBC8e32D9f30c498"]')
 
-IS_TAKE_OVER = os.environ.get('IS_TAKE_OVER', True)
+IS_TAKE_OVER = os.environ.get('IS_TAKE_OVER', False)
 
 LOG_CONFIG = {
     "version": 1,
