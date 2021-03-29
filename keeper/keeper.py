@@ -111,6 +111,7 @@ class Keeper:
                     continue
             except Exception as e:
                 self.logger.warning(f"get perpetual status or account count err:{e}")
+                continue
             self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
             #accounts = pool.accounts(perp_index, 0, accounts_count)
             accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)
