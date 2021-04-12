@@ -5,10 +5,9 @@ from lib.contract import Contract
 from lib.wad import Wad
 
 class MarginAccount():
-    def __init__(self, address, available_cash: int, position: int, margin: int, is_safe: bool):
+    def __init__(self, address, position: int, margin: int, is_safe: bool):
         self.address = address
         self.position = Wad(position)
-        self.available_cash = Wad(available_cash)
         self.margin = Wad(margin)
         self.is_safe = is_safe
 
@@ -28,5 +27,5 @@ class Reader(Contract):
         accountsInfo = self.contract.functions.getAccountsInfo(pool_address, perpetual_index, begin, end).call()
         res = []
         for account in accountsInfo[1]:
-            res.append(MarginAccount(account[0], account[1], account[2], account[3], account[4]))
+            res.append(MarginAccount(account[0], account[1], account[2], account[3]))
         return res
