@@ -18,7 +18,6 @@ from lib.wad import Wad
 from watcher import Watcher
 from contract.liquidity_pool import LiquidityPool, Status
 from contract.reader import Reader, MarginAccount
-from contract.pool_creator import PoolCreator
 
 class Keeper:
     logger = logging.getLogger()
@@ -26,37 +25,46 @@ class Keeper:
     def __init__(self, args: list, **kwargs):
         logging.config.dictConfig(config.LOG_CONFIG)
         self.keeper_account = None
-        #self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
-        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL))
+        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
+        # self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL))
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.gas_price = self.web3.toWei(config.GAS_PRICE, "gwei")
 
-        self.pools = {}
+        self.perpetuals = {}
         self.reader = Reader(web3=self.web3, address=Address(config.READER_ADDRESS))
-        self.pool_creator = PoolCreator(web3=self.web3, address=Address(config.POOL_CREATOR_ADDRESS))
 
         # watcher
         self.watcher = Watcher(self.web3)
 
     def _set_liquidity_pools(self):
         if config.IS_USE_WHITELIST:
-            pools_address = json.loads(config.POOL_ADDRESS)
-            for addr in pools_address:
-                pool = LiquidityPool(web3=self.web3, address=Address(addr))
-                self.pools[addr] = pool
+            perpetuals = json.loads(config.PERPETUAL_LIST)
+            for perpetual in perpetuals:
+                pool_addr = perpetual.split("-")[0]
+                pool = LiquidityPool(web3=self.web3, address=Address(pool_addr))
+                self.perpetuals[perpetual] = pool
         else:
-            self._get_pools()
+            self._get_perpetuals()
 
-    def _get_pools(self):
+    def _get_perpetuals(self):
         try:
-            pool_count = self.pool_creator.getLiquidityPoolCount()
-            pool_addrs = self.pool_creator.listLiquidityPools(0, pool_count)
-            for addr in pool_addrs:
-                if addr not in self.pools.keys():
-                    pool = LiquidityPool(web3=self.web3, address=Address(addr))
-                    self.pools[addr] = pool
+            query = '''
+            {
+                perpetuals(where: {position_not: "0", state_in: [%d,%d]}) {
+                    id
+                }
+            }
+            ''' % (Status.NORMAL, Status.EMERGENCY)
+            res = requests.post(config.FUND_GRAPH_URL, json={'query': query}, timeout=10)
+            if res.status_code == 200:
+                perpetuals = res.json()['data']['perpetuals']
+                self.perpetuals = []
+                for perpetual in perpetuals:
+                    pool_addr = perpetual.split("-")[0]
+                    pool = LiquidityPool(web3=self.web3, address=Address(pool_addr))
+                    self.perpetuals[perpetual] = pool
         except Exception as e:
-            self.logger.warning(f"get all pools error: {e}")
+            self.logger.warning(f"get all perpetuals from graph error: {e}")
 
  
     def _check_keeper_account(self):
@@ -74,16 +82,16 @@ class Keeper:
             
         return True
 
-    def _check_all_pools(self):
-        def thread_fun(pool_key):
-            self._check_pool_accounts(pool_key)
+    def _check_all_perpetuals(self):
+        def thread_fun(perp_key):
+            self._check_perpetual_accounts(perp_key)
 
         # not use pool whitelist, get all pools onchain
         if not config.IS_USE_WHITELIST:
-            self._get_pools()
+            self._get_perpetuals()
 
         thread_list = []
-        for key in self.pools.keys():
+        for key in self.perpetuals.keys():
             thread = threading.Thread(target=thread_fun, args=(key,))
             thread_list.append(thread)
 
@@ -93,44 +101,34 @@ class Keeper:
         for i in range(len(thread_list)):
             thread_list[i].join()
 
-        self.logger.info(f"check all pools end!")
+        self.logger.info(f"check all perpetuals end!")
 
 
-    def _check_pool_accounts(self, key):
-        pool = self.pools[key]
-        perp_count = pool.getPerpetualCount()
-        for perp_index in range(perp_count):
-            # check perpetual status
-            try:
-                perp_status = pool.perpetual_status(perp_index)
-                if perp_status != Status.NORMAL and perp_status != Status.EMERGENCY:
-                    self.logger.info(f"perpetual contract status is {perp_status}. continue")
-                    continue
-                accounts_count = pool.accounts_count(perp_index)
-                if accounts_count == 0:
-                    continue
-            except Exception as e:
-                self.logger.warning(f"get perpetual status or account count err:{e}")
-                continue
-            self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
-            #accounts = pool.accounts(perp_index, 0, accounts_count)
-            accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)
-            for account in accounts:
-                #margin_account = self.reader.getMarginAccount(pool.address.address, perp_index, account)
-                #self.logger.info(f"check_account address:{account} margin:{margin_account.margin} position:{margin_account.position} cash:{margin_account.cash} available_cash:{margin_account.available_cash}")
-                #if not margin_account.is_maintenance_margin_safe:
-                self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position}")
-                if not account.is_safe:
-                    self.logger.info(f"account unsafe:{account}")
-                    try:
-                        tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
-                        transaction_status = self._wait_transaction_receipt(tx_hash, 10)
-                        if transaction_status:
-                            self.logger.info(f"liquidate success. address:{account}")
-                        else:
-                            self.logger.info(f"liquidate fail. address:{account}")
-                    except Exception as e:
-                        self.logger.fatal(f"liquidate failed. address:{account} error:{e}")
+    def _check_perpetual_accounts(self, key):
+        perp_index = int(key.split("-")[1])
+        pool = self.perpetuals[key]
+        try:
+            accounts_count = pool.accounts_count(perp_index)
+            if accounts_count == 0:
+                return
+        except Exception as e:
+            self.logger.warning(f"get perpetual account count err:{e}")
+            return
+        self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
+        accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)
+        for account in accounts:
+            self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position}")
+            if not account.is_safe:
+                self.logger.info(f"account unsafe:{account}")
+                try:
+                    tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
+                    transaction_status = self._wait_transaction_receipt(tx_hash, 10)
+                    if transaction_status:
+                        self.logger.info(f"liquidate success. address:{account}")
+                    else:
+                        self.logger.info(f"liquidate fail. address:{account}")
+                except Exception as e:
+                    self.logger.fatal(f"liquidate failed. address:{account} error:{e}")
 
     def _wait_transaction_receipt(self, tx_hash, times):
         self.logger.info(f"tx_hash:{self.web3.toHex(tx_hash)}")
@@ -153,5 +151,5 @@ class Keeper:
     def main(self):
         if self._check_keeper_account():
             self._set_liquidity_pools()
-            self.watcher.add_block_syncer(self._check_all_pools)
+            self.watcher.add_block_syncer(self._check_all_perpetuals)
             self.watcher.run()
