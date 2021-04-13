@@ -50,19 +50,19 @@ class Keeper:
         try:
             query = '''
             {
-                perpetuals(where: {position_not: "0", state_in: [%d,%d]}) {
+                perpetuals(where: {position_not: "0", state_in: [2,3]}) {
                     id
                 }
             }
-            ''' % (Status.NORMAL, Status.EMERGENCY)
-            res = requests.post(config.FUND_GRAPH_URL, json={'query': query}, timeout=10)
+            '''
+            res = requests.post(config.GRAPH_URL, json={'query': query}, timeout=10)
             if res.status_code == 200:
                 perpetuals = res.json()['data']['perpetuals']
-                self.perpetuals = []
+                self.perpetuals = {}
                 for perpetual in perpetuals:
-                    pool_addr = perpetual.split("-")[0]
+                    pool_addr = perpetual['id'].split("-")[0]
                     pool = LiquidityPool(web3=self.web3, address=Address(pool_addr))
-                    self.perpetuals[perpetual] = pool
+                    self.perpetuals[perpetual['id']] = pool
         except Exception as e:
             self.logger.warning(f"get all perpetuals from graph error: {e}")
 
