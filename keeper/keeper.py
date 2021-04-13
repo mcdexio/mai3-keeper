@@ -107,28 +107,30 @@ class Keeper:
     def _check_perpetual_accounts(self, key):
         perp_index = int(key.split("-")[1])
         pool = self.perpetuals[key]
-        try:
-            accounts_count = pool.accounts_count(perp_index)
-            if accounts_count == 0:
-                return
-        except Exception as e:
-            self.logger.warning(f"get perpetual account count err:{e}")
-            return
-        self.logger.info(f"accounts_count:{accounts_count} pool:{pool.address} perp_index:{perp_index}")
-        accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, 0, accounts_count)
-        for account in accounts:
-            self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position}")
-            if not account.is_safe:
-                self.logger.info(f"account unsafe:{account}")
-                try:
-                    tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
-                    transaction_status = self._wait_transaction_receipt(tx_hash, 10)
-                    if transaction_status:
-                        self.logger.info(f"liquidate success. address:{account}")
-                    else:
-                        self.logger.info(f"liquidate fail. address:{account}")
-                except Exception as e:
-                    self.logger.fatal(f"liquidate failed. address:{account} error:{e}")
+        is_continue = True
+        i = 0
+        while is_continue:
+            try:
+                accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, i*500, (i+1)*500)
+                if len(accounts) < 500 :
+                    is_continue = False
+                i += 1
+            except Exception as e:
+                self.logger.warning(f"getAccountsInfo error:{e}")
+
+            for account in accounts:
+                self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position}")
+                if not account.is_safe:
+                    self.logger.info(f"account unsafe:{account}")
+                    try:
+                        tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
+                        transaction_status = self._wait_transaction_receipt(tx_hash, 10)
+                        if transaction_status:
+                            self.logger.info(f"liquidate success. address:{account}")
+                        else:
+                            self.logger.info(f"liquidate fail. address:{account}")
+                    except Exception as e:
+                        self.logger.fatal(f"liquidate failed. address:{account} error:{e}")
 
     def _wait_transaction_receipt(self, tx_hash, times):
         self.logger.info(f"tx_hash:{self.web3.toHex(tx_hash)}")
