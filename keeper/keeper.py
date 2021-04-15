@@ -50,7 +50,7 @@ class Keeper:
         try:
             query = '''
             {
-                perpetuals(where: {position_not: "0", state_in: [2,3]}) {
+                perpetuals(where: {openInterest_not: "0", state_in: [2,3]}) {
                     id
                 }
             }
