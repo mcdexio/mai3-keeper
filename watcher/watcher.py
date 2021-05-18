@@ -55,7 +55,7 @@ class Watcher:
         signal.signal(signal.SIGTERM, self._sigal_handler)
 
         self.logger.info("Watching for new blocks")
-        event_filter = self.web3.eth.filter('latest')
+        # event_filter = self.web3.eth.filter('latest')
         while True:
             if self.terminated:
                 break

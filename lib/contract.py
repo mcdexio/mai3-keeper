@@ -16,9 +16,10 @@ class Contract:
         assert(isinstance(abi, list))
         assert(isinstance(address, Address))
 
-        code = web3.eth.getCode(address.address)
-        if (code == "0x") or (code == "0x0") or (code == b"\x00") or (code is None):
-            raise Exception(f"No contract found at {address}")
+        # comment for arb test net
+        # code = web3.eth.getCode(address.address)
+        # if (code == "0x") or (code == "0x0") or (code == b"\x00") or (code is None):
+        #     raise Exception(f"No contract found at {address}")
 
         return web3.eth.contract(address=address.address, abi=abi)
 

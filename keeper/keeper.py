@@ -25,8 +25,8 @@ class Keeper:
     def __init__(self, args: list, **kwargs):
         logging.config.dictConfig(config.LOG_CONFIG)
         self.keeper_account = None
-        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
-        # self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL))
+        # self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL, request_kwargs={'headers':{"Origin":"mcdex.io"}}))
+        self.web3 = Web3(HTTPProvider(endpoint_uri=config.ETH_RPC_URL))
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.gas_price = self.web3.toWei(config.GAS_PRICE, "gwei")
 
@@ -55,7 +55,7 @@ class Keeper:
                 }
             }
             '''
-            res = requests.post(config.GRAPH_URL, json={'query': query}, timeout=10)
+            res = requests.post(config.GRAPH_URL, json={'query': query}, timeout=20)
             if res.status_code == 200:
                 perpetuals = res.json()['data']['perpetuals']
                 self.perpetuals = {}
@@ -121,16 +121,16 @@ class Keeper:
             for account in accounts:
                 self.logger.info(f"check_account pool_address:{pool.address} perp_index:{perp_index} address:{account.address} margin:{account.margin} position:{account.position}")
                 if not account.is_safe:
-                    self.logger.info(f"account unsafe:{account}")
+                    self.logger.info(f"account unsafe:{account.address}")
                     try:
                         tx_hash = pool.liquidateByAMM(perp_index, account.address, self.keeper_account, self.gas_price)
                         transaction_status = self._wait_transaction_receipt(tx_hash, 10)
                         if transaction_status:
-                            self.logger.info(f"liquidate success. address:{account}")
+                            self.logger.info(f"liquidate success. address:{account.address}")
                         else:
-                            self.logger.info(f"liquidate fail. address:{account}")
+                            self.logger.info(f"liquidate fail. address:{account.address}")
                     except Exception as e:
-                        self.logger.fatal(f"liquidate failed. address:{account} error:{e}")
+                        self.logger.fatal(f"liquidate failed. address:{account.address} error:{e}")
 
     def _wait_transaction_receipt(self, tx_hash, times):
         self.logger.info(f"tx_hash:{self.web3.toHex(tx_hash)}")
