@@ -1,7 +1,7 @@
 import os
 
 # eth node rpc request
-ETH_RPC_URL = os.environ.get('ETH_RPC_URL', 'https://kovan.infura.io/v3/2bdd050c8d2d40f69e612d9ad2c99119')
+ETH_RPC_URL = os.environ.get('ETH_RPC_URL', 'https://kovan5.arbitrum.io/rpc')
 
 # timeout for get transaction receipt(second)
 TX_TIMEOUT = os.environ.get('TX_TIMEOUT', 300)
