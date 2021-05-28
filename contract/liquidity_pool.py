@@ -60,8 +60,8 @@ class LiquidityPool(Contract):
                 })
         return tx_hash
 
-    def liquidateByTrader(self, perpetual_index, trader, amount, price, deadline, user, gas_price):
-        tx_hash = self.contract.functions.liquidateByTrader(perpetual_index, trader, amount.value, price.value, deadline).transact({
+    def liquidateByTrader(self, perpetual_index, liquidator, trader, amount, price, deadline, user, gas_price):
+        tx_hash = self.contract.functions.liquidateByTrader(perpetual_index, liquidator, trader, amount.value, price.value, deadline).transact({
                     'from': user.address,
                     'gasPrice': gas_price
                 })

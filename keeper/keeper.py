@@ -111,8 +111,8 @@ class Keeper:
         i = 0
         while is_continue:
             try:
-                accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, i*500, (i+1)*500)
-                if len(accounts) < 500 :
+                accounts = self.reader.getAccountsInfo(pool.address.address, perp_index, i*config.MAX_NUM, (i+1)*config.MAX_NUM)
+                if len(accounts) < config.MAX_NUM :
                     is_continue = False
                 i += 1
             except Exception as e:

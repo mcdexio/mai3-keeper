@@ -1124,6 +1124,11 @@
       },
       {
         "internalType": "address",
+        "name": "liquidator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "trader",
         "type": "address"
       },
