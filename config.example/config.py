@@ -14,6 +14,8 @@ GAS_PRICE = os.environ.get('GAS_PRICE', 1)
 MAX_NUM = int(os.environ.get('MAX_NUM', 100))
 IS_USE_WHITELIST = os.environ.get('IS_USE_WHITELIST', False)
 PERPETUAL_LIST = os.environ.get('PERPETUAL_LIST', '["0xFE62314f9FB010BEBF52808cD5A4c571a47c4c46-0", "0x1Ef9Db1C1EAF2240DA2a78e581d53b9e833295BE-0"]')
+# notice lowercase
+POOL_BLACK_LIST = os.environ.get('POOL_BLACK_LIST', '["0xfe62314f9fb010bebf52808cd5a4c571a47c4c46"]')
 READER_ADDRESS = os.environ.get('READER_ADDRESS', '0x50DD9E7d582F13637137F8bDD8357E0b6b5f6B5B')
 IS_TAKE_OVER = os.environ.get('IS_TAKE_OVER', False)
 

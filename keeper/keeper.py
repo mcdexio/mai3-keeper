@@ -61,6 +61,9 @@ class Keeper:
                 self.perpetuals = {}
                 for perpetual in perpetuals:
                     pool_addr = perpetual['id'].split("-")[0]
+                    if pool_addr in config.POOL_BLACK_LIST:
+                        self.logger.info(f"pool in black list: {pool_addr}")
+                        continue
                     pool = LiquidityPool(web3=self.web3, address=Address(pool_addr))
                     self.perpetuals[perpetual['id']] = pool
         except Exception as e:
