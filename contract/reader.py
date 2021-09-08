@@ -23,7 +23,7 @@ class Reader(Contract):
         self.address = address
         self.contract = self._get_contract(web3, self.abi, address)
 
-    def getAccountsInfo(self, pool_address, perpetual_index, begin, end) -> []:
+    def getAccountsInfo(self, pool_address, perpetual_index, begin, end):
         accountsInfo = self.contract.functions.getAccountsInfo(pool_address, perpetual_index, begin, end).call()
         res = []
         for account in accountsInfo[1]:

@@ -4,7 +4,7 @@ FROM continuumio/miniconda3:4.6.14
 # Install linux dependencies
 RUN apt update && \
     apt-get update && \
-    apt-get install -y gcc build-essential
+    apt-get install -y gcc build-essential vim curl
 
 # ./install | create keeper mining environment
 COPY setup/environment-linux.yml setup/

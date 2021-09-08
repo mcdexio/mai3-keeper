@@ -11,20 +11,30 @@ class Watcher:
     def __init__(self, web3: Web3 = None):
         self.web3 = web3
         self.block_syncers = []
+        self.price_syncers = []
 
         self.terminated = False
         self._last_block_time = None
+        self.threads = []
 
     def run(self):
         if self.web3 is None:
             self.logger.fatal("Init web3 and set for watcher")
             return
         self.logger.info(f"Keeper connected to {self.web3.provider}")
-        if self.web3.eth.defaultAccount:
-            self.logger.info(f"Keeper operating as {self.web3.eth.defaultAccount}")
 
-        #self._wait_for_node_sync()
-        self._start_watching_blocks()
+        # thread for syncing data process by block filter
+        block_thread = threading.Thread(target=self._start_watching_blocks)
+        block_thread.start()
+        self.threads.append(block_thread)
+        # thread for syncing data process by price update
+        price_thread = threading.Thread(target=self._start_watching_prices)
+        block_thread.start()
+        self.threads.append(price_thread)
+
+        # wait for all threads end
+        for thread in self.threads:
+            thread.join()
         self.logger.info("Keeper shut down")
 
     def _wait_for_node_sync(self):
@@ -47,6 +57,11 @@ class Watcher:
         assert(self.web3 is not None)
         self.block_syncers.append(AsyncThread(callback))
 
+    def add_price_syncer(self, callback):
+        assert(callable(callback))
+        assert(self.web3 is not None)
+        self.price_syncers.append(AsyncThread(callback))
+
     def set_terminated(self):
         self.terminated = True
 
@@ -65,38 +80,55 @@ class Watcher:
             #        self.logger.fatal("No new blocks received for 300 seconds, the keeper will terminate")
             #        break
             
-#            for event in event_filter.get_new_entries():
+            # for event in event_filter.get_new_entries():
             self._sync_block()
-            time.sleep(20)
+            time.sleep(10)
 
         for block_syncer in self.block_syncers:
             block_syncer.wait()
 
+    def _start_watching_prices(self):
+        signal.signal(signal.SIGINT, self._sigal_handler)
+        signal.signal(signal.SIGTERM, self._sigal_handler)
+
+        self.logger.info("Watching for prices update")
+        while True:
+            if self.terminated:
+                break
+            self._sync_prices()
+            time.sleep(1)
+
+        for price_syncer in self.price_syncers:
+            price_syncer.wait()
+
 
     def _sync_block(self):
         self._last_block_time = int(time.time())
-        #block = self.web3.eth.getBlock(block_hash)
-        #block_number = block['number']
-        #if self.web3.eth.syncing:
-        #    self.logger.info(f"the node is syncing, new block #{block_number} ({block_hash}) ignored ")
-        #    return 
-        
-        #max_block_number = self.web3.eth.blockNumber
-        #if block_number != max_block_number:
-        #    self.logger.debug(f"Ignoring block #{block_number} ({block_hash}),"
-        #                            f" as there is already block #{max_block_number} available")
-        #    return
 
         if self.terminated:
             self.logger.debug(f"Ignoring block as keeper is already terminating")
 
         def on_start():
-            self.logger.debug(f"Processing the syncer")
+            self.logger.debug(f"Processing block syncers")
 
         def on_finish():
-            self.logger.debug(f"Finished processing the syncer")
+            self.logger.debug(f"Finished processing block syncers")
         for block_syncer in self.block_syncers:
             if not block_syncer.run(on_start, on_finish):
+                self.logger.debug(f"Ignoring"
+                                    f" as previous callback is still running")
+
+    def _sync_prices(self):
+        if self.terminated:
+            self.logger.debug(f"Ignoring price sync as keeper is already terminating")
+
+        def on_start():
+            self.logger.debug(f"Processing price syncers")
+
+        def on_finish():
+            self.logger.debug(f"Finished processing price syncers")
+        for price_syncer in self.price_syncers:
+            if not price_syncer.run(on_start, on_finish):
                 self.logger.debug(f"Ignoring"
                                     f" as previous callback is still running")
                 
